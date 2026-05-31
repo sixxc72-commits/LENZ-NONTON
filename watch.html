@@ -45,21 +45,24 @@ const $ = (x) => document.getElementById(x);
 if (slug) $("back").href = "detail.html?slug=" + encodeURIComponent(slug);
 
 function renderUI(data) {
-    $("title").textContent = data.title || "Sedang Diputar";
-    const servers = data.streaming_servers || data.servers || data.stream || [];
+    $("title").textContent = data.title || data.seriesTitle || "Sedang Diputar";
+    
+    // Deteksi sumber data (Lama vs Baru)
+    const servers = data.streaming_servers || data.servers || data.stream || data.videoServer || [];
     
     if (servers.length === 0) {
         showError("Maaf, link streaming belum tersedia untuk episode ini.");
     } else {
-        $("player").src = servers[0].url;
+        const firstUrl = servers[0].url || servers[0].iframeSrc;
+        $("player").src = firstUrl;
         $("servers").innerHTML = servers.map((s, i) => 
-            `<button class="server-btn ${i === 0 ? "active" : ""}" onclick="changeServer(this, '${s.url}')">${s.name}</button>`
+            `<button class="server-btn ${i === 0 ? "active" : ""}" onclick="changeServer(this, '${s.url || s.iframeSrc}')">${s.name || "Server " + (i+1)}</button>`
         ).join("");
     }
 
-    const downloads = data.download_links || data.downloads || data.download || [];
+    const downloads = data.download_links || data.downloads || data.download || data.downloadBox || [];
     $("downloads").innerHTML = downloads.length > 0 ? downloads.map(dl => 
-        `<div class="dl-card"><h4>${dl.quality || "Source"}</h4><a href="${dl.url}" target="_blank">Download</a></div>`
+        `<div class="dl-card"><h4>${dl.quality || "Source"}</h4><a href="${dl.url || (dl.links && dl.links[0]?.url)}" target="_blank">Download</a></div>`
     ).join("") : '<p class="muted">Tidak ada link download.</p>';
 }
 
@@ -74,24 +77,34 @@ function changeServer(btn, url) {
     btn.classList.add('active');
 }
 
-// Logika pemanggilan dengan Fallback
-const targetId = slug ? slug : id;
-API.watch(targetId).then(res => {
-    const data = res.data || res.result || res;
-    // Jika hasil watch kosong, coba ambil dari API.detail
-    if (!data || (data.streaming_servers && data.streaming_servers.length === 0)) {
-        API.detail(targetId).then(detailRes => {
-            const detailData = detailRes.data || detailRes.result || detailRes;
-            if (detailData && detailData.streaming_servers && detailData.streaming_servers.length > 0) {
-                renderUI(detailData);
+// Logika Fallback Otomatis
+async function init() {
+    try {
+        // Coba API utama
+        const res = await API.watch(id || slug);
+        const data = res.data || res.result || res;
+        
+        if (data && (data.streaming_servers?.length > 0 || data.videoServer?.length > 0)) {
+            renderUI(data);
+        } else {
+            throw new Error("Data Kosong");
+        }
+    } catch (e) {
+        // Jika gagal, coba API cadangan
+        try {
+            const streamRes = await StreamAPI.get(slug);
+            if (streamRes.success) {
+                renderUI(streamRes.data);
             } else {
-                showError("Link streaming tidak ditemukan di server API.");
+                showError("Link streaming tidak ditemukan di semua server.");
             }
-        });
-    } else {
-        renderUI(data);
+        } catch (err) {
+            showError("Gagal memuat video dari server.");
+        }
     }
-}).catch(() => showError("Gagal menghubungi server API."));
+}
+
+init();
 </script>
 </body>
 </html>
