@@ -9,21 +9,28 @@
 <body>
 <main>
   <section class="section">
-    <h2 id="title" style="margin-bottom:14px"></h2>
-    <div class="player-wrap"><iframe id="player" allowfullscreen></iframe></div>
-    <div>
+    <h2 id="title" style="margin-bottom:14px">Memuat data...</h2>
+    
+    <div id="player-container" class="player-wrap">
+        <iframe id="player" allowfullscreen src=""></iframe>
+    </div>
+    
+    <div id="server-section">
       <div class="muted" style="margin-bottom:6px;font-size:13px">Pilih Server:</div>
       <div id="servers" class="server-list"></div>
     </div>
+
     <div style="margin-top:24px">
       <div class="muted" style="margin-bottom:8px;font-size:13px">Download Episode:</div>
       <div id="downloads" class="dl-list"></div>
     </div>
+    
     <div style="margin-top:24px">
       <a id="back" class="btn ghost" href="#">← Kembali ke Detail</a>
     </div>
   </section>
 </main>
+
 <script src="api.js"></script>
 <script src="app.js"></script>
 <script>
@@ -36,22 +43,34 @@ if (slug) $("back").href = "detail.html?slug=" + encodeURIComponent(slug);
 if (!id) {
   $("title").innerHTML = Util.errorBox("ID episode tidak ada");
 } else {
-  $("title").textContent = "Memuat episode...";
   API.watch(id)
     .then((res) => {
       const d = res.data || res.result || res;
-      $("title").textContent = d.title || d.episode || "Sedang Diputar";
+      $("title").textContent = d.title || "Sedang Diputar";
 
-      const servers = d.stream || d.servers || d.mirror || d.embed_servers || [];
-      const defaultUrl = d.stream_url || d.iframe || d.embed || (Array.isArray(servers) && (servers[0]?.url || servers[0]?.embed || servers[0]?.src));
-      if (defaultUrl) $("player").src = defaultUrl;
+      // Mendapatkan daftar server dari berbagai kemungkinan key
+      const servers = d.stream || d.servers || d.streaming_servers || d.mirror || d.embed_servers || [];
+      const defaultUrl = d.stream_url || d.iframe || d.embed || (servers.length > 0 ? (servers[0]?.url || servers[0]?.embed || servers[0]?.src) : null);
 
-      if (Array.isArray(servers) && servers.length) {
+      // Logika Jika Data Server Kosong
+      if (!defaultUrl && servers.length === 0) {
+        $("player-container").innerHTML = `<div style="background:#111; padding:40px; text-align:center; color:#ff4757; border: 1px solid #333;">
+            <h3>Video Tidak Tersedia</h3>
+            <p>Maaf, API tidak mengirimkan data streaming untuk episode ini.</p>
+        </div>`;
+        $("server-section").style.display = "none";
+      } else {
+        $("player").src = defaultUrl;
+      }
+
+      // Menampilkan Tombol Server
+      if (Array.isArray(servers) && servers.length > 0) {
         $("servers").innerHTML = servers.map((s, i) => {
           const u = s.url || s.embed || s.src || "";
           const name = s.name || s.server || s.quality || "Server " + (i + 1);
           return `<button data-url="${u}" class="${i === 0 ? "active" : ""}">${name}</button>`;
         }).join("");
+
         $("servers").querySelectorAll("button").forEach((b) => {
           b.onclick = () => {
             $("servers").querySelectorAll("button").forEach((x) => x.classList.remove("active"));
@@ -59,25 +78,26 @@ if (!id) {
             $("player").src = b.dataset.url;
           };
         });
-      } else {
-        $("servers").innerHTML = `<span class="muted">Hanya 1 server tersedia.</span>`;
       }
 
-      const downloads = d.download || d.downloads || [];
-      if (Array.isArray(downloads) && downloads.length) {
+      // Download Section
+      const downloads = d.download || d.downloads || d.download_links || [];
+      if (Array.isArray(downloads) && downloads.length > 0) {
         $("downloads").innerHTML = downloads.map((dl) => {
           const links = dl.urls || dl.links || dl.url || [];
           const linksArr = Array.isArray(links) ? links : [{ host: "Link", url: links }];
           return `<div class="dl-card">
-            <h4>${dl.quality || dl.resolution || "Quality"} ${dl.size ? "· " + dl.size : ""}</h4>
-            ${linksArr.map((l) => `<a href="${l.url || l}" target="_blank" rel="noopener">${l.host || l.name || "Download"}</a>`).join("")}
+            <h4>${dl.quality || "Source"} ${dl.size ? "· " + dl.size : ""}</h4>
+            ${linksArr.map((l) => `<a href="${l.url || l}" target="_blank" rel="noopener">${l.host || "Download"}</a>`).join("")}
           </div>`;
         }).join("");
       } else {
         $("downloads").innerHTML = `<p class="muted">Tidak ada link download.</p>`;
       }
     })
-    .catch(() => ($("title").innerHTML = Util.errorBox("Gagal memuat episode")));
+    .catch(() => {
+        $("title").innerHTML = Util.errorBox("Gagal menghubungi server API");
+    });
 }
 </script>
 </body>
