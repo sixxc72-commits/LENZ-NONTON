@@ -1,8 +1,8 @@
-// LENZ NONTON - INTEGRATED API LAYER (STRUKTUR LENZ ANIME)
+// LENZ NONTON - INTEGRATED API LAYER
 const API_BASE = "https://scripapi.web.id/gateway.php/anime";
 const JIKAN_BASE = "https://api.jikan.moe/v4";
+const STREAM_API = "https://api.baseku.my.id/api/tensei/content";
 
-// Menggunakan Referer yang diizinkan oleh server API
 const fetchOptions = {
   headers: {
     "Referer": "https://scripapi.web.id/",
@@ -23,6 +23,11 @@ const API = {
   detail: (slug) => fetch(`${API_BASE}/detail?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
   watch: (id) => fetch(`${API_BASE}/watch?id=${encodeURIComponent(id)}`, fetchOptions).then(_json),
   batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
+};
+
+/* ============== API Streaming Baru ============== */
+const StreamAPI = {
+  get: (slug) => fetch(`${STREAM_API}/${slug}`).then(_json),
 };
 
 /* ============== Metadata Jikan ============== */
@@ -55,5 +60,6 @@ const Util = {
 };
 
 window.API = API;
+window.StreamAPI = StreamAPI; // Ditambahkan agar bisa diakses di file HTML
 window.Jikan = Jikan;
 window.Util = Util;
