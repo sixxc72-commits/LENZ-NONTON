@@ -18,17 +18,21 @@
 <main>
   <section class="section">
     <h2 id="title" style="margin-bottom:14px">Memuat data...</h2>
+    
     <div id="player-container" class="player-wrap">
         <iframe id="player" allowfullscreen src=""></iframe>
     </div>
-    <div id="server-section">
+
+    <div id="server-section" style="margin-top:16px">
       <div class="muted" style="margin-bottom:6px;font-size:13px">Pilih Server Streaming:</div>
       <div id="servers" class="server-list btn-grid"></div>
     </div>
+
     <div style="margin-top:24px">
       <div class="muted" style="margin-bottom:8px;font-size:13px">Download Episode:</div>
       <div id="downloads" class="dl-list"></div>
     </div>
+
     <div style="margin-top:24px">
       <a id="back" class="btn ghost" href="#">← Kembali ke Detail</a>
     </div>
@@ -53,8 +57,9 @@ function renderUI(res) {
     const data = res.data;
     $("title").textContent = data.title || data.seriesTitle || "Sedang Diputar";
     
-    // Membaca key videoServer dari API baru
+    // Membaca server dari struktur data API Baru
     const servers = data.videoServer || [];
+    $("server-section").style.display = servers.length > 0 ? "block" : "none";
     
     if (servers.length === 0) {
         showError("Maaf, link streaming belum tersedia untuk episode ini.");
@@ -65,7 +70,7 @@ function renderUI(res) {
         ).join("");
     }
 
-    // Membaca key downloadBox dari API baru
+    // Membaca link download dari struktur data API Baru
     const downloadBox = data.downloadBox || [];
     if (downloadBox.length > 0 && downloadBox[0].qualities) {
         $("downloads").innerHTML = downloadBox[0].qualities.map(q => {
@@ -89,14 +94,15 @@ function changeServer(btn, url) {
     btn.classList.add('active');
 }
 
-// Eksekusi Pemanggilan Tunggal
 async function init() {
     const targetSlug = slug || id;
     if (!targetSlug) {
         showError("Parameter slug tidak ditemukan di URL.");
         return;
     }
+
     try {
+        // Langsung memanggil API.watch yang sudah mengarah ke server baru via proxy
         const res = await API.watch(targetSlug);
         renderUI(res);
     } catch (e) {
