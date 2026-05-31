@@ -1,41 +1,31 @@
-// LENZ NONTON - INTEGRATED HYBRID API LAYER
-const API_BASE = "https://scripapi.web.id/gateway.php/anime"; 
-const STREAM_API = "https://api.baseku.my.id/api/tensei/content"; 
+// LENZ NONTON - NEW API ENGINE ONLY (100% BASEKU API)
+const BASE_URL = "https://api.baseku.my.id/api/tensei";
 const JIKAN_BASE = "https://api.jikan.moe/v4";
 
+// Proxy tangguh untuk menghindari CORS / Blokir IP di sisi client (Vercel)
 const CORS_PROXY = "https://api.allorigins.win/raw?url=";
-
-const fetchOptions = {
-  headers: {
-    "Referer": "https://scripapi.web.id/",
-    "Origin": "https://scripapi.web.id/",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  }
-};
 
 const _json = async (r) => {
   if (!r.ok) throw new Error("HTTP " + r.status);
-  
-  // Proteksi ekstra: Pastikan data yang kembali adalah JSON, bukan HTML error
-  const contentType = r.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    throw new Error("Server tidak mengembalikan JSON (Mungkin episode belum tersedia)");
-  }
   return await r.json();
 };
 
-/* ============== API Utama ============== */
+/* ============== API Utama (Full Baseku) ============== */
 const API = {
-  home: () => fetch(`${API_BASE}/home`, fetchOptions).then(_json),
-  search: (q) => fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`, fetchOptions).then(_json),
-  detail: (slug) => fetch(`${API_BASE}/detail?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
-  batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
+  // Jalur Home
+  home: () => fetch(`${CORS_PROXY}${encodeURIComponent(`${BASE_URL}/home`)}`).then(_json),
   
-  // Menembak API baru via proxy
-  watch: (slug) => {
-    const targetUrl = `${STREAM_API}/${slug}`;
-    return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
-  },
+  // Jalur Pencarian (Search)
+  search: (q) => fetch(`${CORS_PROXY}${encodeURIComponent(`${BASE_URL}/search?q=${encodeURIComponent(q)}`)}`).then(_json),
+  
+  // Jalur Detail Anime
+  detail: (slug) => fetch(`${CORS_PROXY}${encodeURIComponent(`${BASE_URL}/series/${slug}`)}`).then(_json),
+  
+  // Jalur List / Batch Anime
+  batch: (slug) => fetch(`${CORS_PROXY}${encodeURIComponent(`${BASE_URL}/series-list/${slug}`)}`).then(_json),
+  
+  // Jalur Streaming Video (Content)
+  watch: (slug) => fetch(`${CORS_PROXY}${encodeURIComponent(`${BASE_URL}/content/${slug}`)}`).then(_json)
 };
 
 /* ============== Metadata Jikan ============== */
