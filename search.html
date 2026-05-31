@@ -8,33 +8,64 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+
 <main>
   <section class="section">
-    <div class="section-head"><h2 id="title">Hasil Pencarian</h2></div>
+    <div class="section-head">
+      <h2 id="title">Hasil Pencarian</h2>
+    </div>
+
     <div id="results" class="grid"></div>
   </section>
 </main>
+
 <script src="api.js"></script>
 <script src="app.js"></script>
+
 <script>
-mountShell();
+mountShell("search");
+
 const q = Util.qs("q") || "";
-document.getElementById("title").textContent = `Hasil: "${q}"`;
 const box = document.getElementById("results");
+
+document.getElementById("title").textContent =
+  `Hasil: "${q}"`;
+
 box.innerHTML = Util.skeleton(12);
 
-if (!q) {
-  box.innerHTML = `<p class="muted">Masukkan kata kunci.</p>`;
+if (!q.trim()) {
+
+  box.innerHTML =
+    `<p class="muted">Masukkan kata kunci pencarian.</p>`;
+
 } else {
+
   API.search(q)
     .then((data) => {
-      const list = extractList(data);
+
+      console.log("SEARCH DATA:", data);
+
+      // Format API:
+      // data.data.anime
+
+      const list = data?.data?.anime || [];
+
       box.innerHTML = list.length
         ? list.map(animeCard).join("")
         : `<p class="muted">Tidak ada hasil untuk "${q}".</p>`;
+
     })
-    .catch(() => (box.innerHTML = Util.errorBox("Gagal mencari")));
+    .catch((err) => {
+
+      console.error("SEARCH ERROR:", err);
+
+      box.innerHTML =
+        Util.errorBox("Gagal mencari anime");
+
+    });
+
 }
 </script>
+
 </body>
 </html>
