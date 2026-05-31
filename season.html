@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anime Musim Ini - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <div class="section-head"><h2>Anime Musim Ini</h2><span class="muted">Season Now · Jikan</span></div>
+    <div id="list" class="grid"></div>
+  </section>
+  <section class="section">
+    <div class="section-head"><h2>Rekomendasi</h2></div>
+    <div id="recs" class="grid"></div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell("season");
+document.getElementById("list").innerHTML = Util.skeleton(12);
+document.getElementById("recs").innerHTML = Util.skeleton(8);
+
+Jikan.seasonNow().then((r) => {
+  document.getElementById("list").innerHTML = (r.data || []).map(jikanCard).join("");
+}).catch(() => document.getElementById("list").innerHTML = Util.errorBox("Gagal memuat season"));
+
+Jikan.recommendations().then((r) => {
+  const flat = [];
+  (r.data || []).slice(0, 8).forEach((g) => (g.entry || []).forEach((e) => flat.push(e)));
+  document.getElementById("recs").innerHTML = flat.slice(0, 12).map(jikanCard).join("");
+}).catch(() => document.getElementById("recs").innerHTML = Util.errorBox("Gagal memuat rekomendasi"));
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LENZ NONTON - Streaming Anime Sub Indo Terbaru</title>
+  <meta name="description" content="Nonton anime sub indo terbaru, episode terupdate, batch download, dan info jadwal tayang di LENZ NONTON." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main id="app">
+  <div id="hero"></div>
+
+  <section class="section">
+    <div class="section-head"><h2>Anime Ongoing</h2><span class="muted">Update terbaru</span></div>
+    <div id="ongoing" class="grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Anime Complete</h2><span class="muted">Sudah tamat</span></div>
+    <div id="complete" class="grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Top Anime (Jikan)</h2><a class="muted" href="top.html">Lihat semua →</a></div>
+    <div id="top" class="grid"></div>
+  </section>
+</main>
+
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell("home");
+
+const $ = (id) => document.getElementById(id);
+$("ongoing").innerHTML = Util.skeleton(10);
+$("complete").innerHTML = Util.skeleton(10);
+$("top").innerHTML = Util.skeleton(6);
+
+API.home()
+  .then((data) => {
+    const ongoing = data.ongoing || data.ongoing_anime || data.data?.ongoing || extractList(data);
+    const complete = data.complete || data.completed || data.complete_anime || data.data?.complete || [];
+
+    // Hero from first ongoing
+    const first = (ongoing && ongoing[0]) || null;
+    $("hero").innerHTML = first
+      ? `<div class="hero">
+          <img src="${Util.pickImage(first)}" alt="">
+          <div class="hero-content">
+            <h1>${Util.pickTitle(first)}</h1>
+            <p>Episode terbaru sudah tayang. Tonton sekarang di LENZ NONTON, streaming cepat tanpa ribet.</p>
+            <a class="btn" href="detail.html?slug=${encodeURIComponent(Util.pickSlug(first))}">▶ Tonton Sekarang</a>
+          </div>
+        </div>`
+      : "";
+
+    $("ongoing").innerHTML = (ongoing || []).slice(0, 18).map(animeCard).join("") || Util.errorBox("Data ongoing kosong");
+    $("complete").innerHTML = (complete || []).slice(0, 12).map(animeCard).join("") || `<p class="muted">Tidak ada data complete.</p>`;
+  })
+  .catch((e) => {
+    $("ongoing").innerHTML = Util.errorBox("Gagal memuat data home");
+    console.error(e);
+  });
+
+Jikan.top(1)
+  .then((d) => {
+    $("top").innerHTML = (d.data || []).slice(0, 12).map(jikanCard).join("");
+  })
+  .catch(() => ($("top").innerHTML = Util.errorBox("Gagal memuat Top Anime")));
+</script>
+</body>
+</html>

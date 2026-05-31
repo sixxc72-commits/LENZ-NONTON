@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cari Anime - LENZ NONTON</title>
+  <meta name="description" content="Cari judul anime favoritmu di LENZ NONTON." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <div class="section-head"><h2 id="title">Hasil Pencarian</h2></div>
+    <div id="results" class="grid"></div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell();
+const q = Util.qs("q") || "";
+document.getElementById("title").textContent = `Hasil: "${q}"`;
+const box = document.getElementById("results");
+box.innerHTML = Util.skeleton(12);
+
+if (!q) {
+  box.innerHTML = `<p class="muted">Masukkan kata kunci.</p>`;
+} else {
+  API.search(q)
+    .then((data) => {
+      const list = extractList(data);
+      box.innerHTML = list.length
+        ? list.map(animeCard).join("")
+        : `<p class="muted">Tidak ada hasil untuk "${q}".</p>`;
+    })
+    .catch(() => (box.innerHTML = Util.errorBox("Gagal mencari")));
+}
+</script>
+</body>
+</html>

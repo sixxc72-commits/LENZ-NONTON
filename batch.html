@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Batch Download - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <h2 id="title" style="margin-bottom:14px">Batch Download</h2>
+    <div id="body"></div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell();
+const slug = Util.qs("slug");
+const $ = (x) => document.getElementById(x);
+
+if (!slug) {
+  $("body").innerHTML = Util.errorBox("Slug batch tidak ada");
+} else {
+  $("body").innerHTML = `<p class="muted">Memuat...</p>`;
+  API.batch(slug)
+    .then((res) => {
+      const d = res.data || res.result || res;
+      $("title").textContent = (d.title || "Batch Download");
+      const downloads = d.download || d.downloads || d.batch || [];
+      if (!Array.isArray(downloads) || !downloads.length) {
+        $("body").innerHTML = `<p class="muted">Tidak ada batch tersedia.</p>`;
+        return;
+      }
+      $("body").innerHTML = `
+        ${d.image ? `<img src="${d.image}" style="max-width:220px;border-radius:10px;margin-bottom:18px">` : ""}
+        ${d.synopsis ? `<p class="synopsis">${d.synopsis}</p>` : ""}
+        <div class="dl-list">
+          ${downloads.map((dl) => {
+            const links = dl.urls || dl.links || dl.url || [];
+            const arr = Array.isArray(links) ? links : [{ host: "Link", url: links }];
+            return `<div class="dl-card">
+              <h4>${dl.quality || dl.resolution || "Quality"} ${dl.size ? "· " + dl.size : ""}</h4>
+              ${arr.map((l) => `<a href="${l.url || l}" target="_blank" rel="noopener">${l.host || l.name || "Download"}</a>`).join("")}
+            </div>`;
+          }).join("")}
+        </div>`;
+    })
+    .catch(() => ($("body").innerHTML = Util.errorBox("Gagal memuat batch")));
+}
+</script>
+</body>
+</html>

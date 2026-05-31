@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Detail Anime - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <div id="detail"></div>
+
+  <section class="section">
+    <div class="section-head"><h2>Daftar Episode</h2></div>
+    <div id="episodes" class="ep-list"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Karakter (Jikan)</h2></div>
+    <div id="characters" class="grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>Review</h2></div>
+    <div id="reviews"></div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell();
+const slug = Util.qs("slug");
+const $ = (id) => document.getElementById(id);
+$("detail").innerHTML = `<div class="detail-head"><div class="skeleton"><div class="thumb" style="aspect-ratio:2/3"></div></div><div><div class="skeleton"><div class="bar" style="width:60%;height:24px"></div><div class="bar"></div><div class="bar"></div></div></div></div>`;
+
+if (!slug) {
+  $("detail").innerHTML = Util.errorBox("Slug tidak ditemukan");
+} else {
+  API.detail(slug)
+    .then((res) => {
+      const d = res.data || res.result || res;
+      const title = Util.pickTitle(d);
+      const img = Util.pickImage(d);
+      const genres = d.genre || d.genres || [];
+      const genreList = Array.isArray(genres)
+        ? genres.map((g) => (typeof g === "string" ? g : g.name)).join(", ")
+        : "";
+      const synopsis = d.synopsis || d.description || d.sinopsis || "Belum ada sinopsis.";
+      const episodes = d.episode_list || d.episodes || d.episode || [];
+      const batchSlug = d.batch?.slug || d.batch_slug;
+
+      $("detail").innerHTML = `
+        <div class="detail-head">
+          <div class="poster"><img src="${img}" alt="${title}"></div>
+          <div>
+            <h1>${title}</h1>
+            <div class="info-row">
+              ${d.type ? `<span><b>Type:</b> ${d.type}</span>` : ""}
+              ${d.status ? `<span><b>Status:</b> ${d.status}</span>` : ""}
+              ${d.rating || d.score ? `<span><b>Rating:</b> ⭐ ${d.rating || d.score}</span>` : ""}
+              ${d.studio ? `<span><b>Studio:</b> ${d.studio}</span>` : ""}
+              ${d.release || d.released ? `<span><b>Rilis:</b> ${d.release || d.released}</span>` : ""}
+            </div>
+            ${genreList ? `<div class="tags">${(Array.isArray(genres) ? genres : []).map((g) => `<span class="tag">${typeof g === "string" ? g : g.name}</span>`).join("")}</div>` : ""}
+            <p class="synopsis">${synopsis}</p>
+            ${batchSlug ? `<a class="btn ghost" href="batch.html?slug=${encodeURIComponent(batchSlug)}">📦 Batch Download</a>` : ""}
+          </div>
+        </div>`;
+
+      const list = Array.isArray(episodes) ? episodes : [];
+      $("episodes").innerHTML = list.length
+        ? list.map((ep) => {
+            const id = ep.id || ep.slug || ep.endpoint || ep.episode_id || "";
+            const num = ep.episode || ep.number || ep.title || id;
+            return `<a href="watch.html?id=${encodeURIComponent(id)}&slug=${encodeURIComponent(slug)}">Eps ${num}</a>`;
+          }).join("")
+        : `<p class="muted">Belum ada episode.</p>`;
+
+      // Jikan extras by title match
+      Jikan.searchByTitle(title)
+        .then((s) => {
+          const mal = s.data?.[0];
+          if (!mal) return;
+          const malId = mal.mal_id;
+          Jikan.characters(malId).then((c) => {
+            $("characters").innerHTML = (c.data || []).slice(0, 12).map((x) => `
+              <div class="card">
+                <div class="thumb"><img src="${x.character.images?.jpg?.image_url}" loading="lazy"></div>
+                <div class="meta"><div class="title">${x.character.name}</div><div class="sub">${x.role || ""}</div></div>
+              </div>`).join("") || `<p class="muted">Tidak ada karakter.</p>`;
+          }).catch(() => $("characters").innerHTML = `<p class="muted">Gagal memuat karakter.</p>`);
+
+          Jikan.reviews(malId).then((r) => {
+            $("reviews").innerHTML = (r.data || []).slice(0, 3).map((rv) => `
+              <div class="dl-card" style="background:var(--surface);border:1px solid var(--border);padding:16px;border-radius:10px;margin-bottom:10px">
+                <h4 style="margin:0 0 6px">${rv.user?.username || "Anon"} · ⭐ ${rv.score || "-"}</h4>
+                <p class="muted" style="font-size:13px;line-height:1.6;margin:0;max-height:120px;overflow:hidden">${(rv.review || "").slice(0, 400)}...</p>
+              </div>`).join("") || `<p class="muted">Belum ada review.</p>`;
+          }).catch(() => $("reviews").innerHTML = `<p class="muted">Gagal memuat review.</p>`);
+        }).catch(() => {});
+    })
+    .catch(() => ($("detail").innerHTML = Util.errorBox("Gagal memuat detail anime")));
+}
+</script>
+</body>
+</html>

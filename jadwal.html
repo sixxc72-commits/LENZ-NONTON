@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Jadwal Tayang Anime - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <div class="section-head"><h2>Jadwal Tayang Anime</h2><span class="muted">Sumber: Jikan</span></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="list" class="grid"></div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell("jadwal");
+const days = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+const labels = {monday:"Senin",tuesday:"Selasa",wednesday:"Rabu",thursday:"Kamis",friday:"Jumat",saturday:"Sabtu",sunday:"Minggu"};
+const todayIdx = (new Date().getDay() + 6) % 7;
+const $ = (x) => document.getElementById(x);
+
+$("tabs").innerHTML = days.map((d, i) => `<button data-day="${d}" class="${i === todayIdx ? "active" : ""}">${labels[d]}</button>`).join("");
+
+function load(day) {
+  $("list").innerHTML = Util.skeleton(10);
+  Jikan.schedules(day)
+    .then((r) => {
+      $("list").innerHTML = (r.data || []).map(jikanCard).join("") || `<p class="muted">Tidak ada jadwal.</p>`;
+    })
+    .catch(() => ($("list").innerHTML = Util.errorBox("Gagal memuat jadwal")));
+}
+$("tabs").querySelectorAll("button").forEach((b) => {
+  b.onclick = () => {
+    $("tabs").querySelectorAll("button").forEach((x) => x.classList.remove("active"));
+    b.classList.add("active");
+    load(b.dataset.day);
+  };
+});
+load(days[todayIdx]);
+</script>
+</body>
+</html>

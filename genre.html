@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Genre Anime - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <div class="section-head"><h2>Daftar Genre</h2><span class="muted">Sumber: Jikan</span></div>
+    <div id="genres" class="tabs"></div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell("genre");
+document.getElementById("genres").innerHTML = `<p class="muted">Memuat...</p>`;
+Jikan.genres().then((r) => {
+  document.getElementById("genres").innerHTML = (r.data || []).map((g) =>
+    `<a href="search.html?q=${encodeURIComponent(g.name)}"><button>${g.name} <span style="opacity:.6">(${g.count || 0})</span></button></a>`
+  ).join("");
+}).catch(() => document.getElementById("genres").innerHTML = Util.errorBox("Gagal memuat genre"));
+</script>
+</body>
+</html>

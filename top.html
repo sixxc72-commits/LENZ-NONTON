@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Top Anime - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <div class="section-head"><h2>Top Anime</h2><span class="muted">Ranking global · Jikan</span></div>
+    <div id="list" class="grid"></div>
+    <div style="text-align:center;margin-top:24px">
+      <button id="more" class="btn ghost">Muat Lebih Banyak</button>
+    </div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell("top");
+let page = 1;
+const $ = (x) => document.getElementById(x);
+function load() {
+  $("more").disabled = true;
+  $("more").textContent = "Memuat...";
+  Jikan.top(page).then((r) => {
+    $("list").insertAdjacentHTML("beforeend", (r.data || []).map(jikanCard).join(""));
+    page++;
+    $("more").disabled = false;
+    $("more").textContent = "Muat Lebih Banyak";
+  }).catch(() => { $("more").textContent = "Gagal memuat"; });
+}
+$("list").innerHTML = Util.skeleton(12);
+$("list").innerHTML = "";
+load();
+$("more").onclick = load;
+</script>
+</body>
+</html>

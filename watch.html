@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nonton - LENZ NONTON</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<main>
+  <section class="section">
+    <h2 id="title" style="margin-bottom:14px"></h2>
+    <div class="player-wrap"><iframe id="player" allowfullscreen></iframe></div>
+    <div>
+      <div class="muted" style="margin-bottom:6px;font-size:13px">Pilih Server:</div>
+      <div id="servers" class="server-list"></div>
+    </div>
+    <div style="margin-top:24px">
+      <div class="muted" style="margin-bottom:8px;font-size:13px">Download Episode:</div>
+      <div id="downloads" class="dl-list"></div>
+    </div>
+    <div style="margin-top:24px">
+      <a id="back" class="btn ghost" href="#">← Kembali ke Detail</a>
+    </div>
+  </section>
+</main>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+mountShell();
+const id = Util.qs("id");
+const slug = Util.qs("slug");
+const $ = (x) => document.getElementById(x);
+if (slug) $("back").href = "detail.html?slug=" + encodeURIComponent(slug);
+
+if (!id) {
+  $("title").innerHTML = Util.errorBox("ID episode tidak ada");
+} else {
+  $("title").textContent = "Memuat episode...";
+  API.watch(id)
+    .then((res) => {
+      const d = res.data || res.result || res;
+      $("title").textContent = d.title || d.episode || "Sedang Diputar";
+
+      const servers = d.stream || d.servers || d.mirror || d.embed_servers || [];
+      const defaultUrl = d.stream_url || d.iframe || d.embed || (Array.isArray(servers) && (servers[0]?.url || servers[0]?.embed || servers[0]?.src));
+      if (defaultUrl) $("player").src = defaultUrl;
+
+      if (Array.isArray(servers) && servers.length) {
+        $("servers").innerHTML = servers.map((s, i) => {
+          const u = s.url || s.embed || s.src || "";
+          const name = s.name || s.server || s.quality || "Server " + (i + 1);
+          return `<button data-url="${u}" class="${i === 0 ? "active" : ""}">${name}</button>`;
+        }).join("");
+        $("servers").querySelectorAll("button").forEach((b) => {
+          b.onclick = () => {
+            $("servers").querySelectorAll("button").forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            $("player").src = b.dataset.url;
+          };
+        });
+      } else {
+        $("servers").innerHTML = `<span class="muted">Hanya 1 server tersedia.</span>`;
+      }
+
+      const downloads = d.download || d.downloads || [];
+      if (Array.isArray(downloads) && downloads.length) {
+        $("downloads").innerHTML = downloads.map((dl) => {
+          const links = dl.urls || dl.links || dl.url || [];
+          const linksArr = Array.isArray(links) ? links : [{ host: "Link", url: links }];
+          return `<div class="dl-card">
+            <h4>${dl.quality || dl.resolution || "Quality"} ${dl.size ? "· " + dl.size : ""}</h4>
+            ${linksArr.map((l) => `<a href="${l.url || l}" target="_blank" rel="noopener">${l.host || l.name || "Download"}</a>`).join("")}
+          </div>`;
+        }).join("");
+      } else {
+        $("downloads").innerHTML = `<p class="muted">Tidak ada link download.</p>`;
+      }
+    })
+    .catch(() => ($("title").innerHTML = Util.errorBox("Gagal memuat episode")));
+}
+</script>
+</body>
+</html>
