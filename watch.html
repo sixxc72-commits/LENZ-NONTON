@@ -50,13 +50,14 @@ if (slug) $("back").href = "detail.html?slug=" + encodeURIComponent(slug);
 
 function renderUI(res) {
     if (!res || !res.success || !res.data) {
-        showError("Maaf, data video tidak valid atau tidak ditemukan.");
+        showError("Maaf, data video dari API baru tidak valid.");
         return;
     }
 
     const data = res.data;
     $("title").textContent = data.title || data.seriesTitle || "Sedang Diputar";
     
+    // Ambil daftar server video
     const servers = data.videoServer || [];
     $("server-section").style.display = servers.length > 0 ? "block" : "none";
     
@@ -69,6 +70,7 @@ function renderUI(res) {
         ).join("");
     }
 
+    // Ambil daftar link download jika ada
     const downloadBox = data.downloadBox || [];
     if (downloadBox.length > 0 && downloadBox[0].qualities) {
         $("downloads").innerHTML = downloadBox[0].qualities.map(q => {
@@ -93,7 +95,7 @@ function changeServer(btn, url) {
 }
 
 async function init() {
-    // PERBAIKAN: Dahulukan id karena menyimpan nama lengkap episode streaming
+    // Parameter 'id' membawa nama episode lengkap untuk API Baru
     const targetSlug = id || slug;
     if (!targetSlug) {
         showError("Parameter episode tidak ditemukan di URL.");
@@ -105,7 +107,7 @@ async function init() {
         renderUI(res);
     } catch (e) {
         console.error("Fetch Error:", e);
-        showError("Maaf, link streaming belum tersedia untuk episode ini di server.");
+        showError("Gagal memuat video dari API Baru.");
     }
 }
 
