@@ -1,25 +1,40 @@
-// LENZ NONTON - LATEST API LAYER ONLY
+// LENZ NONTON - INTEGRATED HYBRID API LAYER
+const API_BASE = "https://scripapi.web.id/gateway.php/anime"; // API Lama
+const STREAM_API = "https://api.baseku.my.id/api/tensei/content"; // API Baru
 const JIKAN_BASE = "https://api.jikan.moe/v4";
-const STREAM_API = "https://api.baseku.my.id/api/tensei/content";
 
-// Proxy tangguh untuk menembus proteksi Cloudflare/CORS server target
+// Proxy untuk API Baru di halaman watch agar tidak terkena block CORS/403
 const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+
+const fetchOptions = {
+  headers: {
+    "Referer": "https://scripapi.web.id/",
+    "Origin": "https://scripapi.web.id/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  }
+};
 
 const _json = async (r) => {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
 };
 
-/* ============== API Utama (Sumber Terbaru) ============== */
+/* ============== API Utama ============== */
 const API = {
-  // Hanya menggunakan API baru menggunakan parameter slug
+  // Fitur ini TETAP menggunakan API Lama (ScripAPI)
+  home: () => fetch(`${API_BASE}/home`, fetchOptions).then(_json),
+  search: (q) => fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`, fetchOptions).then(_json),
+  detail: (slug) => fetch(`${API_BASE}/detail?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
+  batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
+  
+  // KHUSUS fungsi watch ini dialihkan ke API Baru + Proxy
   watch: (slug) => {
     const targetUrl = `${STREAM_API}/${slug}`;
     return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
   },
 };
 
-/* ============== Metadata Jikan (Pelengkap) ============== */
+/* ============== Metadata Jikan ============== */
 const Jikan = {
   searchByTitle: (title) => fetch(`${JIKAN_BASE}/anime?q=${encodeURIComponent(title)}&limit=1`).then(_json),
   top: (page = 1) => fetch(`${JIKAN_BASE}/top/anime?page=${page}`).then(_json),
