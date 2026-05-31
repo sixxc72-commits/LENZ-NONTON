@@ -16,8 +16,8 @@
     </div>
     
     <div id="server-section">
-      <div class="muted" style="margin-bottom:6px;font-size:13px">Pilih Server:</div>
-      <div id="servers" class="server-list"></div>
+      <div class="muted" style="margin-bottom:6px;font-size:13px">Pilih Server Streaming:</div>
+      <div id="servers" class="server-list btn-grid"></div>
     </div>
 
     <div style="margin-top:24px">
@@ -45,43 +45,33 @@ if (!id) {
 } else {
   API.watch(id)
     .then((res) => {
-      const d = res.data || res.result || res;
-      $("title").textContent = d.title || "Sedang Diputar";
+      // Mengambil data mengikuti struktur respons website kedua yang berhasil
+      const data = res.data || res.result || res;
+      $("title").textContent = data.title || "Sedang Diputar";
 
-      // Mendapatkan daftar server dari berbagai kemungkinan key
-      const servers = d.stream || d.servers || d.streaming_servers || d.mirror || d.embed_servers || [];
-      const defaultUrl = d.stream_url || d.iframe || d.embed || (servers.length > 0 ? (servers[0]?.url || servers[0]?.embed || servers[0]?.src) : null);
-
-      // Logika Jika Data Server Kosong
-      if (!defaultUrl && servers.length === 0) {
+      // Mengambil daftar server dengan prioritas pada 'streaming_servers'
+      const servers = data.streaming_servers || data.servers || data.stream || [];
+      
+      // Jika tidak ada server, tampilkan pesan error
+      if (servers.length === 0) {
         $("player-container").innerHTML = `<div style="background:#111; padding:40px; text-align:center; color:#ff4757; border: 1px solid #333;">
             <h3>Video Tidak Tersedia</h3>
             <p>Maaf, API tidak mengirimkan data streaming untuk episode ini.</p>
         </div>`;
         $("server-section").style.display = "none";
       } else {
-        $("player").src = defaultUrl;
-      }
+        // Set default server pertama
+        $("player").src = servers[0].url;
 
-      // Menampilkan Tombol Server
-      if (Array.isArray(servers) && servers.length > 0) {
+        // Render tombol server
         $("servers").innerHTML = servers.map((s, i) => {
-          const u = s.url || s.embed || s.src || "";
-          const name = s.name || s.server || s.quality || "Server " + (i + 1);
-          return `<button data-url="${u}" class="${i === 0 ? "active" : ""}">${name}</button>`;
+          const activeClass = i === 0 ? "active" : "";
+          return `<button class="server-btn ${activeClass}" onclick="changeServer(this, '${s.url}')">${s.name}</button>`;
         }).join("");
-
-        $("servers").querySelectorAll("button").forEach((b) => {
-          b.onclick = () => {
-            $("servers").querySelectorAll("button").forEach((x) => x.classList.remove("active"));
-            b.classList.add("active");
-            $("player").src = b.dataset.url;
-          };
-        });
       }
 
       // Download Section
-      const downloads = d.download || d.downloads || d.download_links || [];
+      const downloads = data.download_links || data.downloads || data.download || [];
       if (Array.isArray(downloads) && downloads.length > 0) {
         $("downloads").innerHTML = downloads.map((dl) => {
           const links = dl.urls || dl.links || dl.url || [];
@@ -98,6 +88,13 @@ if (!id) {
     .catch(() => {
         $("title").innerHTML = Util.errorBox("Gagal menghubungi server API");
     });
+}
+
+// Fungsi bantu untuk pindah server
+function changeServer(btn, url) {
+    $("player").src = url;
+    document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 }
 </script>
 </body>
