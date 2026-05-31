@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nonton - LENZ NONTON</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Tambahan CSS dasar untuk tombol server agar rapi */
+    .btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .server-btn { padding: 8px 16px; border: 1px solid #333; background: #1a1a1a; color: #fff; cursor: pointer; border-radius: 4px; }
+    .server-btn.active { background: #ff4757; border-color: #ff4757; }
+    .player-wrap { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; }
+    .player-wrap iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+    .dl-card { border: 1px solid #333; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
+  </style>
 </head>
 <body>
 <main>
@@ -40,48 +49,49 @@ const slug = Util.qs("slug");
 const $ = (x) => document.getElementById(x);
 if (slug) $("back").href = "detail.html?slug=" + encodeURIComponent(slug);
 
-if (!id) {
+// Fungsi utama untuk memuat data
+function loadWatchData(targetId) {
+  API.watch(targetId)
+    .then((res) => {
+      const data = res.data || res.result || res;
+      if (!data || Object.keys(data).length === 0) throw new Error("Empty Data");
+      
+      $("title").textContent = data.title || "Sedang Diputar";
+      const servers = data.streaming_servers || data.servers || data.stream || [];
+      
+      if (servers.length === 0) {
+        showError("Maaf, link streaming belum tersedia untuk episode ini.");
+      } else {
+        $("player").src = servers[0].url;
+        $("servers").innerHTML = servers.map((s, i) => 
+          `<button class="server-btn ${i === 0 ? "active" : ""}" onclick="changeServer(this, '${s.url}')">${s.name}</button>`
+        ).join("");
+      }
+
+      const downloads = data.download_links || data.downloads || data.download || [];
+      $("downloads").innerHTML = downloads.length > 0 ? downloads.map(dl => 
+          `<div class="dl-card"><h4>${dl.quality || "Source"}</h4><a href="${dl.url}" target="_blank">Download</a></div>`
+      ).join("") : '<p class="muted">Tidak ada link download.</p>';
+    })
+    .catch(() => showError("Gagal menghubungi server API. Periksa koneksi Anda."));
+}
+
+function showError(msg) {
+  $("player-container").innerHTML = `<div style="padding:40px; text-align:center; color:#ff4757;"><h3>${msg}</h3></div>`;
+  $("server-section").style.display = "none";
+}
+
+function changeServer(btn, url) {
+  $("player").src = url;
+  document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Eksekusi: Prioritaskan slug, jika tidak ada baru gunakan id
+if (!id && !slug) {
   $("title").innerHTML = Util.errorBox("ID episode tidak ada");
 } else {
-  // Fungsi utama untuk memuat data
-  function loadWatchData() {
-    API.watch(id)
-      .then((res) => {
-        const data = res.data || res.result || res;
-        if (!data || Object.keys(data).length === 0) throw new Error("Empty Data");
-        
-        $("title").textContent = data.title || "Sedang Diputar";
-        const servers = data.streaming_servers || data.servers || data.stream || [];
-        
-        if (servers.length === 0) {
-          showError("Maaf, link streaming belum tersedia untuk episode ini.");
-        } else {
-          $("player").src = servers[0].url;
-          $("servers").innerHTML = servers.map((s, i) => 
-            `<button class="server-btn ${i === 0 ? "active" : ""}" onclick="changeServer(this, '${s.url}')">${s.name}</button>`
-          ).join("");
-        }
-
-        const downloads = data.download_links || data.downloads || data.download || [];
-        $("downloads").innerHTML = downloads.length > 0 ? downloads.map(dl => 
-            `<div class="dl-card"><h4>${dl.quality || "Source"}</h4><a href="${dl.url}" target="_blank">Download</a></div>`
-        ).join("") : '<p class="muted">Tidak ada link download.</p>';
-      })
-      .catch(() => showError("Gagal menghubungi server API. Periksa koneksi Anda."));
-  }
-
-  function showError(msg) {
-    $("player-container").innerHTML = `<div style="padding:40px; text-align:center; color:#ff4757;"><h3>${msg}</h3></div>`;
-    $("server-section").style.display = "none";
-  }
-
-  function changeServer(btn, url) {
-    $("player").src = url;
-    document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-
-  loadWatchData();
+  loadWatchData(slug ? slug : id);
 }
 </script>
 </body>
