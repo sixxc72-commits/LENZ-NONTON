@@ -3,6 +3,9 @@ const API_BASE = "https://scripapi.web.id/gateway.php/anime";
 const JIKAN_BASE = "https://api.jikan.moe/v4";
 const STREAM_API = "https://api.baseku.my.id/api/tensei/content";
 
+// Proxy pihak ketiga untuk menembus batasan CORS (Error 403 / Blocked by CORS)
+const CORS_PROXY = "https://corsproxy.io/?";
+
 const fetchOptions = {
   headers: {
     "Referer": "https://scripapi.web.id/",
@@ -21,13 +24,23 @@ const API = {
   home: () => fetch(`${API_BASE}/home`, fetchOptions).then(_json),
   search: (q) => fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`, fetchOptions).then(_json),
   detail: (slug) => fetch(`${API_BASE}/detail?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
-  watch: (id) => fetch(`${API_BASE}/watch?id=${encodeURIComponent(id)}`, fetchOptions).then(_json),
+  
+  // Mengubah API Utama watch agar langsung menembak API baru via CORS Proxy
+  watch: (slug) => {
+    const targetUrl = `${STREAM_API}/${slug}`;
+    return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
+  },
+  
   batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
 };
 
-/* ============== API Streaming Baru ============== */
+/* ============== API Streaming Baru (Backup / Alternatif) ============== */
 const StreamAPI = {
-  get: (slug) => fetch(`${STREAM_API}/${slug}`).then(_json),
+  // Ditambahkan proxy juga agar aman jika dipanggil di watch.html Anda
+  get: (slug) => {
+    const targetUrl = `${STREAM_API}/${slug}`;
+    return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
+  },
 };
 
 /* ============== Metadata Jikan ============== */
@@ -60,6 +73,6 @@ const Util = {
 };
 
 window.API = API;
-window.StreamAPI = StreamAPI; // Ditambahkan agar bisa diakses di file HTML
+window.StreamAPI = StreamAPI;
 window.Jikan = Jikan;
 window.Util = Util;
