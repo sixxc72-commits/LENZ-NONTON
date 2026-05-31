@@ -1,21 +1,22 @@
-// LENZ NONTON - INTEGRATED API LAYER
+// LENZ NONTON - INTEGRATED API LAYER (STRUKTUR LENZ ANIME)
 const API_BASE = "https://scripapi.web.id/gateway.php/anime";
 const JIKAN_BASE = "https://api.jikan.moe/v4";
 
-// Header agar request dianggap berasal dari web yang diizinkan
+// Menggunakan Referer yang diizinkan oleh server API
 const fetchOptions = {
   headers: {
     "Referer": "https://scripapi.web.id/",
-    "Origin": "https://scripapi.web.id/"
+    "Origin": "https://scripapi.web.id/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
   }
 };
 
-const _json = (r) => {
+const _json = async (r) => {
   if (!r.ok) throw new Error("HTTP " + r.status);
-  return r.json();
+  return await r.json();
 };
 
-/* ============== ScripAPI (Main API) ============== */
+/* ============== API Utama ============== */
 const API = {
   home: () => fetch(`${API_BASE}/home`, fetchOptions).then(_json),
   search: (q) => fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`, fetchOptions).then(_json),
@@ -24,12 +25,20 @@ const API = {
   batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
 };
 
-/* ============== Jikan (Metadata) ============== */
+/* ============== Metadata Jikan ============== */
 const Jikan = {
   searchByTitle: (title) => fetch(`${JIKAN_BASE}/anime?q=${encodeURIComponent(title)}&limit=1`).then(_json),
+  top: (page = 1) => fetch(`${JIKAN_BASE}/top/anime?page=${page}`).then(_json),
+  genres: () => fetch(`${JIKAN_BASE}/genres/anime`).then(_json),
+  schedules: (day) => fetch(`${JIKAN_BASE}/schedules${day ? `?filter=${day}` : ""}`).then(_json),
+  seasonNow: () => fetch(`${JIKAN_BASE}/seasons/now`).then(_json),
+  recommendations: () => fetch(`${JIKAN_BASE}/recommendations/anime`).then(_json),
+  full: (id) => fetch(`${JIKAN_BASE}/anime/${id}/full`).then(_json),
+  characters: (id) => fetch(`${JIKAN_BASE}/anime/${id}/characters`).then(_json),
+  reviews: (id) => fetch(`${JIKAN_BASE}/anime/${id}/reviews`).then(_json),
 };
 
-/* ============== Helpers ============== */
+/* ============== Helper ============== */
 const Util = {
   qs: (k) => new URLSearchParams(location.search).get(k),
   pickImage: (obj) =>
@@ -38,7 +47,11 @@ const Util = {
     "https://via.placeholder.com/300x420/111/fff?text=No+Image",
   pickTitle: (o) => o?.title || o?.name || o?.judul || "Tanpa Judul",
   pickSlug: (o) => o?.slug || o?.endpoint || o?.id || "",
-  errorBox: (msg) => `<div style="padding:40px; text-align:center; color:#ff4757;">⚠️ ${msg}</div>`
+  skeleton: (n = 12) =>
+    Array.from({ length: n })
+      .map(() => `<div class="card skeleton"><div class="thumb"></div><div class="bar"></div><div class="bar short"></div></div>`)
+      .join(""),
+  errorBox: (msg) => `<div style="padding:40px; text-align:center; color:#ff4757;">⚠️ ${msg}.</div>`
 };
 
 window.API = API;
