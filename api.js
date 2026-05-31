@@ -3,8 +3,8 @@ const API_BASE = "https://scripapi.web.id/gateway.php/anime";
 const JIKAN_BASE = "https://api.jikan.moe/v4";
 const STREAM_API = "https://api.baseku.my.id/api/tensei/content";
 
-// Proxy pihak ketiga untuk menembus batasan CORS (Error 403 / Blocked by CORS)
-const CORS_PROXY = "https://corsproxy.io/?";
+// Mengganti ke AllOrigins Proxy karena corsproxy.io terkena block 403
+const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
 const fetchOptions = {
   headers: {
@@ -25,7 +25,6 @@ const API = {
   search: (q) => fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`, fetchOptions).then(_json),
   detail: (slug) => fetch(`${API_BASE}/detail?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
   
-  // Mengubah API Utama watch agar langsung menembak API baru via CORS Proxy
   watch: (slug) => {
     const targetUrl = `${STREAM_API}/${slug}`;
     return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
@@ -34,9 +33,8 @@ const API = {
   batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
 };
 
-/* ============== API Streaming Baru (Backup / Alternatif) ============== */
+/* ============== API Streaming Baru ============== */
 const StreamAPI = {
-  // Ditambahkan proxy juga agar aman jika dipanggil di watch.html Anda
   get: (slug) => {
     const targetUrl = `${STREAM_API}/${slug}`;
     return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
