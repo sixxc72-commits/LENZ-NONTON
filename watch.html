@@ -43,58 +43,45 @@ if (slug) $("back").href = "detail.html?slug=" + encodeURIComponent(slug);
 if (!id) {
   $("title").innerHTML = Util.errorBox("ID episode tidak ada");
 } else {
-  API.watch(id)
-    .then((res) => {
-      // Mengambil data mengikuti struktur respons website kedua yang berhasil
-      const data = res.data || res.result || res;
-      $("title").textContent = data.title || "Sedang Diputar";
+  // Fungsi utama untuk memuat data
+  function loadWatchData() {
+    API.watch(id)
+      .then((res) => {
+        const data = res.data || res.result || res;
+        if (!data || Object.keys(data).length === 0) throw new Error("Empty Data");
+        
+        $("title").textContent = data.title || "Sedang Diputar";
+        const servers = data.streaming_servers || data.servers || data.stream || [];
+        
+        if (servers.length === 0) {
+          showError("Maaf, link streaming belum tersedia untuk episode ini.");
+        } else {
+          $("player").src = servers[0].url;
+          $("servers").innerHTML = servers.map((s, i) => 
+            `<button class="server-btn ${i === 0 ? "active" : ""}" onclick="changeServer(this, '${s.url}')">${s.name}</button>`
+          ).join("");
+        }
 
-      // Mengambil daftar server dengan prioritas pada 'streaming_servers'
-      const servers = data.streaming_servers || data.servers || data.stream || [];
-      
-      // Jika tidak ada server, tampilkan pesan error
-      if (servers.length === 0) {
-        $("player-container").innerHTML = `<div style="background:#111; padding:40px; text-align:center; color:#ff4757; border: 1px solid #333;">
-            <h3>Video Tidak Tersedia</h3>
-            <p>Maaf, API tidak mengirimkan data streaming untuk episode ini.</p>
-        </div>`;
-        $("server-section").style.display = "none";
-      } else {
-        // Set default server pertama
-        $("player").src = servers[0].url;
+        const downloads = data.download_links || data.downloads || data.download || [];
+        $("downloads").innerHTML = downloads.length > 0 ? downloads.map(dl => 
+            `<div class="dl-card"><h4>${dl.quality || "Source"}</h4><a href="${dl.url}" target="_blank">Download</a></div>`
+        ).join("") : '<p class="muted">Tidak ada link download.</p>';
+      })
+      .catch(() => showError("Gagal menghubungi server API. Periksa koneksi Anda."));
+  }
 
-        // Render tombol server
-        $("servers").innerHTML = servers.map((s, i) => {
-          const activeClass = i === 0 ? "active" : "";
-          return `<button class="server-btn ${activeClass}" onclick="changeServer(this, '${s.url}')">${s.name}</button>`;
-        }).join("");
-      }
+  function showError(msg) {
+    $("player-container").innerHTML = `<div style="padding:40px; text-align:center; color:#ff4757;"><h3>${msg}</h3></div>`;
+    $("server-section").style.display = "none";
+  }
 
-      // Download Section
-      const downloads = data.download_links || data.downloads || data.download || [];
-      if (Array.isArray(downloads) && downloads.length > 0) {
-        $("downloads").innerHTML = downloads.map((dl) => {
-          const links = dl.urls || dl.links || dl.url || [];
-          const linksArr = Array.isArray(links) ? links : [{ host: "Link", url: links }];
-          return `<div class="dl-card">
-            <h4>${dl.quality || "Source"} ${dl.size ? "· " + dl.size : ""}</h4>
-            ${linksArr.map((l) => `<a href="${l.url || l}" target="_blank" rel="noopener">${l.host || "Download"}</a>`).join("")}
-          </div>`;
-        }).join("");
-      } else {
-        $("downloads").innerHTML = `<p class="muted">Tidak ada link download.</p>`;
-      }
-    })
-    .catch(() => {
-        $("title").innerHTML = Util.errorBox("Gagal menghubungi server API");
-    });
-}
-
-// Fungsi bantu untuk pindah server
-function changeServer(btn, url) {
+  function changeServer(btn, url) {
     $("player").src = url;
     document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+  }
+
+  loadWatchData();
 }
 </script>
 </body>
