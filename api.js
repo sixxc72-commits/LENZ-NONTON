@@ -1,47 +1,25 @@
-// LENZ NONTON - INTEGRATED API LAYER
-const API_BASE = "https://scripapi.web.id/gateway.php/anime";
+// LENZ NONTON - LATEST API LAYER ONLY
 const JIKAN_BASE = "https://api.jikan.moe/v4";
 const STREAM_API = "https://api.baseku.my.id/api/tensei/content";
 
-// Mengganti ke AllOrigins Proxy karena corsproxy.io terkena block 403
+// Proxy tangguh untuk menembus proteksi Cloudflare/CORS server target
 const CORS_PROXY = "https://api.allorigins.win/raw?url=";
-
-const fetchOptions = {
-  headers: {
-    "Referer": "https://scripapi.web.id/",
-    "Origin": "https://scripapi.web.id/",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  }
-};
 
 const _json = async (r) => {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
 };
 
-/* ============== API Utama ============== */
+/* ============== API Utama (Sumber Terbaru) ============== */
 const API = {
-  home: () => fetch(`${API_BASE}/home`, fetchOptions).then(_json),
-  search: (q) => fetch(`${API_BASE}/search?q=${encodeURIComponent(q)}`, fetchOptions).then(_json),
-  detail: (slug) => fetch(`${API_BASE}/detail?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
-  
+  // Hanya menggunakan API baru menggunakan parameter slug
   watch: (slug) => {
     const targetUrl = `${STREAM_API}/${slug}`;
     return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
   },
-  
-  batch: (slug) => fetch(`${API_BASE}/batch?slug=${encodeURIComponent(slug)}`, fetchOptions).then(_json),
 };
 
-/* ============== API Streaming Baru ============== */
-const StreamAPI = {
-  get: (slug) => {
-    const targetUrl = `${STREAM_API}/${slug}`;
-    return fetch(`${CORS_PROXY}${encodeURIComponent(targetUrl)}`).then(_json);
-  },
-};
-
-/* ============== Metadata Jikan ============== */
+/* ============== Metadata Jikan (Pelengkap) ============== */
 const Jikan = {
   searchByTitle: (title) => fetch(`${JIKAN_BASE}/anime?q=${encodeURIComponent(title)}&limit=1`).then(_json),
   top: (page = 1) => fetch(`${JIKAN_BASE}/top/anime?page=${page}`).then(_json),
@@ -71,6 +49,5 @@ const Util = {
 };
 
 window.API = API;
-window.StreamAPI = StreamAPI;
 window.Jikan = Jikan;
 window.Util = Util;
